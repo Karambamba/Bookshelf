@@ -92,6 +92,7 @@
 
   <div id="bookDetail" class="book-detail-view">
     <h2 id="bookTitle"></h2>
+    <img id="bookImage" src="" alt="Обкладинка книги" style="max-width: 200px; display: none; margin-bottom: 1rem;">
     <p id="bookInfoText">Це місце для розширеної інформації про книгу.</p>
 
     <div class="book-buttons">
@@ -204,9 +205,10 @@
     window.addBook = () => {
       const title = prompt("Назва книги:");
       if (!title) return;
+      const imageUrl = prompt("Посилання на зображення (або залиш порожнім):");
       const booksRef = ref(db, `shelves/${currentShelf}/${currentBoxId}/books`);
       const newBook = push(booksRef);
-      set(newBook, { title });
+      set(newBook, { title, imageUrl: imageUrl || "" });
     };
 
     window.deleteCurrentBox = () => {
@@ -231,6 +233,13 @@
         const data = snapshot.val();
         currentBookDetails = data?.details || "";
         document.getElementById("bookInfoText").innerText = currentBookDetails || "Інформація не вказана.";
+        const imageElement = document.getElementById("bookImage");
+        if (data?.imageUrl) {
+          imageElement.src = data.imageUrl;
+          imageElement.style.display = "block";
+        } else {
+          imageElement.style.display = "none";
+        }
       }, { onlyOnce: true });
     }
 
