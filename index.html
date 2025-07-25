@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>📚 Піксельна Шафа</title>
-
   <style>
     body {
       background: #111;
@@ -30,6 +29,7 @@
       flex-direction: column;
       gap: 0.5rem;
       margin-top: 1rem;
+      min-height: 2rem;
     }
     .box {
       background: #333;
@@ -37,83 +37,116 @@
       padding: 0.5rem;
       cursor: move;
     }
+    .shelf-buttons {
+      margin-top: 1rem;
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .shelf-buttons button {
+      padding: 0.3rem 0.8rem;
+      font-family: monospace;
+      background: #333;
+      color: white;
+      border: 1px solid #555;
+      cursor: pointer;
+      border-radius: 4px;
+    }
   </style>
 </head>
-
 <body>
   <h1>📚 Моя Піксельна Шафа</h1>
 
   <div class="shelf-grid">
     <div class="shelf" data-category="важливо-терміново">
       <h2>🟥 Важливо і Терміново</h2>
-      <div class="boxes" id="shelf-1"></div>
+      <div class="boxes" id="важливо-терміново"></div>
+      <div class="shelf-buttons">
+        <button onclick="addBoxTo('важливо-терміново')">➕ Додати</button>
+        <button onclick="clearShelf('важливо-терміново')">❌ Очистити</button>
+      </div>
     </div>
+
     <div class="shelf" data-category="терміново-неважливо">
       <h2>🟨 Терміново і Неважливо</h2>
-      <div class="boxes" id="shelf-2"></div>
+      <div class="boxes" id="терміново-неважливо"></div>
+      <div class="shelf-buttons">
+        <button onclick="addBoxTo('терміново-неважливо')">➕ Додати</button>
+        <button onclick="clearShelf('терміново-неважливо')">❌ Очистити</button>
+      </div>
     </div>
+
     <div class="shelf" data-category="неважливо-нетерміново">
       <h2>🟦 Неважливо і Нетерміново</h2>
-      <div class="boxes" id="shelf-3"></div>
+      <div class="boxes" id="неважливо-нетерміново"></div>
+      <div class="shelf-buttons">
+        <button onclick="addBoxTo('неважливо-нетерміново')">➕ Додати</button>
+        <button onclick="clearShelf('неважливо-нетерміново')">❌ Очистити</button>
+      </div>
     </div>
+
     <div class="shelf" data-category="важливо-нетерміново">
       <h2>🟩 Важливо і Нетерміново</h2>
-      <div class="boxes" id="shelf-4"></div>
+      <div class="boxes" id="важливо-нетерміново"></div>
+      <div class="shelf-buttons">
+        <button onclick="addBoxTo('важливо-нетерміново')">➕ Додати</button>
+        <button onclick="clearShelf('важливо-нетерміново')">❌ Очистити</button>
+      </div>
     </div>
   </div>
 
-  <button onclick="addBox()">➕ Додати ящик</button>
-
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     const firebaseConfig = {
-  apiKey: "AIzaSyD7cS8FH80HHQxsVvB76SyFgfatQq9TJuE",
-  authDomain: "pixelshelf-e1680.firebaseapp.com",
-  databaseURL: "https://pixelshelf-e1680-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "pixelshelf-e1680",
-  storageBucket: "pixelshelf-e1680.appspot.com",
-  messagingSenderId: "253121150131",
-  appId: "1:253121150131:web:aa9ce817e5b8ee0ddc84c6",
-  measurementId: "G-C6NMFS903Q"
-};
-
+      apiKey: "AIzaSyD7cS8FH80HHQxsVvB76SyFgfatQq9TJuE",
+      authDomain: "pixelshelf-e1680.firebaseapp.com",
+      databaseURL: "https://pixelshelf-e1680-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "pixelshelf-e1680",
+      storageBucket: "pixelshelf-e1680.appspot.com",
+      messagingSenderId: "253121150131",
+      appId: "1:253121150131:web:aa9ce817e5b8ee0ddc84c6",
+      measurementId: "G-C6NMFS903Q"
+    };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // глобальна функція
-    window.addBox = () => {
-      const boxName = prompt("Назва ящика?");
+    // Додати ящик до вказаної полиці
+    window.addBoxTo = (category) => {
+      const boxName = prompt("Назва ящика:");
       if (!boxName) return;
-
-      const refPath = ref(db, "shelves/важливо-терміново");
-      const newBox = push(refPath);
-      set(newBox, {
-        name: boxName,
-        books: {}
-      });
+      const shelfRef = ref(db, "shelves/" + category);
+      const newBox = push(shelfRef);
+      set(newBox, { name: boxName });
     };
 
+    // Очистити всі ящики з полиці
+    window.clearShelf = (category) => {
+      if (confirm("Очистити всі ящики з цієї полиці?")) {
+        const shelfRef = ref(db, "shelves/" + category);
+        remove(shelfRef);
+      }
+    };
+
+    // Завантажити всі полиці
     function loadAll() {
       const shelfRef = ref(db, "shelves");
       onValue(shelfRef, (snapshot) => {
         const data = snapshot.val();
+        document.querySelectorAll(".boxes").forEach(boxes => boxes.innerHTML = "");
         if (!data) return;
 
-        Object.keys(data).forEach((shelfKey, i) => {
-          const shelfDiv = document.getElementById(`shelf-${i + 1}`);
-          shelfDiv.innerHTML = "";
-
-          const boxes = data[shelfKey];
-          for (let boxId in boxes) {
-            const box = boxes[boxId];
+        Object.entries(data).forEach(([category, boxes]) => {
+          const shelfDiv = document.getElementById(category);
+          if (!shelfDiv) return;
+          Object.values(boxes).forEach(box => {
             const boxDiv = document.createElement("div");
             boxDiv.className = "box";
             boxDiv.innerText = box.name;
             shelfDiv.appendChild(boxDiv);
-          }
+          });
         });
       });
     }
