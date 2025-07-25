@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>📚 Піксельна Шафа</title>
+
   <style>
     body {
       background: #111;
@@ -29,7 +30,6 @@
       flex-direction: column;
       gap: 0.5rem;
       margin-top: 1rem;
-      min-height: 2rem;
     }
     .box {
       background: #333;
@@ -46,19 +46,19 @@
   <div class="shelf-grid">
     <div class="shelf" data-category="важливо-терміново">
       <h2>🟥 Важливо і Терміново</h2>
-      <div class="boxes"></div>
+      <div class="boxes" id="shelf-1"></div>
     </div>
     <div class="shelf" data-category="терміново-неважливо">
       <h2>🟨 Терміново і Неважливо</h2>
-      <div class="boxes"></div>
+      <div class="boxes" id="shelf-2"></div>
     </div>
     <div class="shelf" data-category="неважливо-нетерміново">
       <h2>🟦 Неважливо і Нетерміново</h2>
-      <div class="boxes"></div>
+      <div class="boxes" id="shelf-3"></div>
     </div>
     <div class="shelf" data-category="важливо-нетерміново">
       <h2>🟩 Важливо і Нетерміново</h2>
-      <div class="boxes"></div>
+      <div class="boxes" id="shelf-4"></div>
     </div>
   </div>
 
@@ -66,48 +66,45 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { getDatabase, ref, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyD7cS8FH80HHQxsVvB76SyFgfatQq9TJuE",
-      authDomain: "pixelshelf-e1680.firebaseapp.com",
-      databaseURL: "https://pixelshelf-e1680-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "pixelshelf-e1680",
-      storageBucket: "pixelshelf-e1680.appspot.com",
-      messagingSenderId: "253121150131",
-      appId: "1:253121150131:web:aa9ce817e5b8ee0ddc84c6",
-      measurementId: "G-C6NMFS903Q"
-    };
+  apiKey: "AIzaSyD7cS8FH80HHQxsVvB76SyFgfatQq9TJuE",
+  authDomain: "pixelshelf-e1680.firebaseapp.com",
+  databaseURL: "https://pixelshelf-e1680-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "pixelshelf-e1680",
+  storageBucket: "pixelshelf-e1680.appspot.com",
+  messagingSenderId: "253121150131",
+  appId: "1:253121150131:web:aa9ce817e5b8ee0ddc84c6",
+  measurementId: "G-C6NMFS903Q"
+};
+
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // ➕ Додати ящик до "важливо-терміново"
+    // глобальна функція
     window.addBox = () => {
-      const name = prompt("Назва ящика?");
-      if (!name) return;
+      const boxName = prompt("Назва ящика?");
+      if (!boxName) return;
 
-      const path = ref(db, "shelves/важливо-терміново");
-      const newBox = push(path);
+      const refPath = ref(db, "shelves/важливо-терміново");
+      const newBox = push(refPath);
       set(newBox, {
-        name: name,
+        name: boxName,
         books: {}
       });
     };
 
-    // 🔁 Завантаження з бази
     function loadAll() {
       const shelfRef = ref(db, "shelves");
       onValue(shelfRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
 
-        // очистити всі полиці
-        document.querySelectorAll(".boxes").forEach(el => el.innerHTML = "");
-
-        Object.keys(data).forEach((shelfKey) => {
-          const shelfDiv = document.querySelector(`[data-category="${shelfKey}"] .boxes`);
-          if (!shelfDiv) return;
+        Object.keys(data).forEach((shelfKey, i) => {
+          const shelfDiv = document.getElementById(`shelf-${i + 1}`);
+          shelfDiv.innerHTML = "";
 
           const boxes = data[shelfKey];
           for (let boxId in boxes) {
@@ -115,52 +112,11 @@
             const boxDiv = document.createElement("div");
             boxDiv.className = "box";
             boxDiv.innerText = box.name;
-            boxDiv.draggable = true;
-            boxDiv.dataset.id = boxId;
-            boxDiv.dataset.shelf = shelfKey;
-
-            boxDiv.addEventListener("dragstart", (e) => {
-              e.dataTransfer.setData("boxId", boxId);
-              e.dataTransfer.setData("fromShelf", shelfKey);
-            });
-
             shelfDiv.appendChild(boxDiv);
           }
         });
       });
     }
-
-    // 🎯 Drop логіка
-    document.querySelectorAll(".shelf").forEach(shelf => {
-      const shelfKey = shelf.dataset.category;
-      const boxesDiv = shelf.querySelector(".boxes");
-
-      boxesDiv.addEventListener("dragover", (e) => e.preventDefault());
-
-      boxesDiv.addEventListener("drop", (e) => {
-        e.preventDefault();
-        const boxId = e.dataTransfer.getData("boxId");
-        const fromShelf = e.dataTransfer.getData("fromShelf");
-        if (!boxId || !fromShelf || fromShelf === shelfKey) return;
-
-        // забрати з попередньої полиці
-        const fromRef = ref(db, `shelves/${fromShelf}/${boxId}`);
-        let boxData = null;
-
-        onValue(fromRef, (snapshot) => {
-          boxData = snapshot.val();
-        }, {
-          onlyOnce: true
-        });
-
-        setTimeout(() => {
-          if (!boxData) return;
-          const toRef = ref(db, `shelves/${shelfKey}/${boxId}`);
-          set(toRef, boxData);
-          remove(fromRef);
-        }, 200);
-      });
-    });
 
     loadAll();
   </script>
