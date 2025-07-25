@@ -92,11 +92,20 @@
 
   <div id="bookDetail" class="book-detail-view">
     <h2 id="bookTitle"></h2>
+    <p id="bookInfoText">Це місце для розширеної інформації про книгу.</p>
+
     <div class="book-buttons">
+      <button onclick="editCurrentBook()">✍️ Редагувати книгу</button>
       <button onclick="renameCurrentBook()">✏️ Перейменувати книгу</button>
       <button onclick="deleteCurrentBook()">🗑️ Видалити книгу</button>
     </div>
-    <p>Це місце для розширеної інформації про книгу.</p>
+
+    <div id="editForm" style="display:none; margin-top:1rem;">
+      <textarea id="editDetails" rows="4" style="width: 100%; max-width: 500px;"></textarea><br>
+      <button onclick="saveBookDetails()">✅ Зберегти</button>
+      <button onclick="cancelEdit()">❌ Скасувати</button>
+    </div>
+
     <button onclick="backToBox()">⬅️ Назад до ящика</button>
   </div>
 
@@ -122,6 +131,7 @@
     let currentBoxName = "";
     let currentBookId = null;
     let currentBookTitle = "";
+    let currentBookDetails = "";
 
     window.addBoxTo = (category) => {
       const boxName = prompt("Назва ящика:");
@@ -214,7 +224,33 @@
       document.getElementById("bookView").style.display = "none";
       document.getElementById("bookDetail").style.display = "block";
       document.getElementById("bookTitle").innerText = `Книга: ${title}`;
+      document.getElementById("editForm").style.display = "none";
+
+      const bookRef = ref(db, `shelves/${currentShelf}/${currentBoxId}/books/${bookId}`);
+      onValue(bookRef, (snapshot) => {
+        const data = snapshot.val();
+        currentBookDetails = data?.details || "";
+        document.getElementById("bookInfoText").innerText = currentBookDetails || "Інформація не вказана.";
+      }, { onlyOnce: true });
     }
+
+    window.editCurrentBook = () => {
+      document.getElementById("editForm").style.display = "block";
+      document.getElementById("editDetails").value = currentBookDetails;
+    };
+
+    window.saveBookDetails = () => {
+      const newDetails = document.getElementById("editDetails").value;
+      const bookRef = ref(db, `shelves/${currentShelf}/${currentBoxId}/books/${currentBookId}`);
+      update(bookRef, { details: newDetails });
+      currentBookDetails = newDetails;
+      document.getElementById("bookInfoText").innerText = newDetails || "Інформація не вказана.";
+      document.getElementById("editForm").style.display = "none";
+    };
+
+    window.cancelEdit = () => {
+      document.getElementById("editForm").style.display = "none";
+    };
 
     window.renameCurrentBook = () => {
       if (!currentBookId) return;
