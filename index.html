@@ -77,13 +77,14 @@
         <button onclick="clearShelf('важливо-терміново')">❌ Очистити</button>
       </div>
     </div>
-    <!-- Додай інші 3 полиці аналогічно -->
+    <!-- Додайте інші полиці тут за потребою -->
   </div>
 
   <div id="bookView" class="book-view">
     <h2 id="boxTitle"></h2>
     <div class="book-buttons">
       <button onclick="addBook()">➕ Додати книгу</button>
+      <button onclick="renameCurrentBox()">✏️ Перейменувати ящик</button>
       <button onclick="deleteCurrentBox()">🗑️ Видалити ящик</button>
     </div>
     <div id="bookList"></div>
@@ -98,7 +99,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD7cS8FH80HHQxsVvB76SyFgfatQq9TJuE",
@@ -107,8 +108,7 @@
       projectId: "pixelshelf-e1680",
       storageBucket: "pixelshelf-e1680.appspot.com",
       messagingSenderId: "253121150131",
-      appId: "1:253121150131:web:aa9ce817e5b8ee0ddc84c6",
-      measurementId: "G-C6NMFS903Q"
+      appId: "1:253121150131:web:aa9ce817e5b8ee0ddc84c6"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -128,8 +128,7 @@
 
     window.clearShelf = (category) => {
       if (confirm("Очистити всі ящики з цієї полиці?")) {
-        const shelfRef = ref(db, "shelves/" + category);
-        remove(shelfRef);
+        remove(ref(db, "shelves/" + category));
       }
     };
 
@@ -139,11 +138,9 @@
         const data = snapshot.val();
         document.querySelectorAll(".boxes").forEach(boxes => boxes.innerHTML = "");
         if (!data) return;
-
         Object.entries(data).forEach(([category, boxes]) => {
           const shelfDiv = document.getElementById(category);
           if (!shelfDiv) return;
-
           Object.entries(boxes).forEach(([boxId, box]) => {
             const boxDiv = document.createElement("div");
             boxDiv.className = "box";
@@ -179,6 +176,15 @@
         });
       });
     }
+
+    window.renameCurrentBox = () => {
+      const newName = prompt("Нова назва ящика:", currentBoxName);
+      if (!newName) return;
+      const boxRef = ref(db, `shelves/${currentShelf}/${currentBoxId}`);
+      update(boxRef, { name: newName });
+      currentBoxName = newName;
+      document.getElementById("boxTitle").innerText = `Ящик: ${newName}`;
+    };
 
     window.addBook = () => {
       const title = prompt("Назва книги:");
