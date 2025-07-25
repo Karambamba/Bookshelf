@@ -35,7 +35,7 @@
       background: #333;
       border: 1px solid #555;
       padding: 0.5rem;
-      cursor: move;
+      cursor: pointer;
     }
     .shelf-buttons {
       margin-top: 1rem;
@@ -113,7 +113,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // Додати ящик до вказаної полиці
     window.addBoxTo = (category) => {
       const boxName = prompt("Назва ящика:");
       if (!boxName) return;
@@ -122,7 +121,6 @@
       set(newBox, { name: boxName });
     };
 
-    // Очистити всі ящики з полиці
     window.clearShelf = (category) => {
       if (confirm("Очистити всі ящики з цієї полиці?")) {
         const shelfRef = ref(db, "shelves/" + category);
@@ -130,7 +128,6 @@
       }
     };
 
-    // Завантажити всі полиці
     function loadAll() {
       const shelfRef = ref(db, "shelves");
       onValue(shelfRef, (snapshot) => {
@@ -141,10 +138,21 @@
         Object.entries(data).forEach(([category, boxes]) => {
           const shelfDiv = document.getElementById(category);
           if (!shelfDiv) return;
-          Object.values(boxes).forEach(box => {
+
+          Object.entries(boxes).forEach(([boxId, box]) => {
             const boxDiv = document.createElement("div");
             boxDiv.className = "box";
             boxDiv.innerText = box.name;
+            boxDiv.title = "Двічі клацни, щоб видалити";
+
+            boxDiv.ondblclick = () => {
+              const confirmDelete = confirm(`Видалити ящик "${box.name}"?`);
+              if (confirmDelete) {
+                const boxRef = ref(db, `shelves/${category}/${boxId}`);
+                remove(boxRef);
+              }
+            };
+
             shelfDiv.appendChild(boxDiv);
           });
         });
