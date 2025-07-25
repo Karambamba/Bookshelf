@@ -77,7 +77,6 @@
         <button onclick="clearShelf('важливо-терміново')">❌ Очистити</button>
       </div>
     </div>
-    <!-- Додайте інші полиці тут за потребою -->
   </div>
 
   <div id="bookView" class="book-view">
@@ -93,6 +92,10 @@
 
   <div id="bookDetail" class="book-detail-view">
     <h2 id="bookTitle"></h2>
+    <div class="book-buttons">
+      <button onclick="renameCurrentBook()">✏️ Перейменувати книгу</button>
+      <button onclick="deleteCurrentBook()">🗑️ Видалити книгу</button>
+    </div>
     <p>Це місце для розширеної інформації про книгу.</p>
     <button onclick="backToBox()">⬅️ Назад до ящика</button>
   </div>
@@ -117,6 +120,8 @@
     let currentShelf = null;
     let currentBoxId = null;
     let currentBoxName = "";
+    let currentBookId = null;
+    let currentBookTitle = "";
 
     window.addBoxTo = (category) => {
       const boxName = prompt("Назва ящика:");
@@ -171,7 +176,7 @@
           const div = document.createElement("div");
           div.className = "book";
           div.innerText = book.title;
-          div.onclick = () => openBook(book.title);
+          div.onclick = () => openBook(bookId, book.title);
           list.appendChild(div);
         });
       });
@@ -203,11 +208,32 @@
       }
     };
 
-    function openBook(title) {
+    function openBook(bookId, title) {
+      currentBookId = bookId;
+      currentBookTitle = title;
       document.getElementById("bookView").style.display = "none";
       document.getElementById("bookDetail").style.display = "block";
       document.getElementById("bookTitle").innerText = `Книга: ${title}`;
     }
+
+    window.renameCurrentBook = () => {
+      if (!currentBookId) return;
+      const newTitle = prompt("Нова назва книги:", currentBookTitle);
+      if (!newTitle) return;
+      const bookRef = ref(db, `shelves/${currentShelf}/${currentBoxId}/books/${currentBookId}`);
+      update(bookRef, { title: newTitle });
+      currentBookTitle = newTitle;
+      document.getElementById("bookTitle").innerText = `Книга: ${newTitle}`;
+    };
+
+    window.deleteCurrentBook = () => {
+      if (!currentBookId) return;
+      if (confirm("Ви дійсно хочете видалити цю книгу?")) {
+        const bookRef = ref(db, `shelves/${currentShelf}/${currentBoxId}/books/${currentBookId}`);
+        remove(bookRef);
+        backToBox();
+      }
+    };
 
     window.backToShelves = () => {
       document.querySelector(".shelf-grid").style.display = "grid";
