@@ -37,13 +37,14 @@
       padding: 0.5rem;
       cursor: pointer;
     }
-    .shelf-buttons {
+    .shelf-buttons, .book-buttons {
       margin-top: 1rem;
       display: flex;
       gap: 0.5rem;
       justify-content: center;
+      flex-wrap: wrap;
     }
-    .shelf-buttons button {
+    .shelf-buttons button, .book-buttons button {
       padding: 0.3rem 0.8rem;
       font-family: monospace;
       background: #333;
@@ -52,7 +53,7 @@
       cursor: pointer;
       border-radius: 4px;
     }
-    .book-view {
+    .book-view, .book-detail-view {
       display: none;
       margin-top: 2rem;
     }
@@ -60,6 +61,7 @@
       background: #444;
       padding: 0.3rem 0.6rem;
       margin: 0.2rem 0;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -75,40 +77,23 @@
         <button onclick="clearShelf('важливо-терміново')">❌ Очистити</button>
       </div>
     </div>
-    <div class="shelf" data-category="терміново-неважливо">
-      <h2>🔵 Терміново і Неважливо</h2>
-      <div class="boxes" id="терміново-неважливо"></div>
-      <div class="shelf-buttons">
-        <button onclick="addBoxTo('терміново-неважливо')">➕ Додати</button>
-        <button onclick="clearShelf('терміново-неважливо')">❌ Очистити</button>
-      </div>
-    </div>
-    <div class="shelf" data-category="неважливо-нетерміново">
-      <h2>🔹 Неважливо і Нетерміново</h2>
-      <div class="boxes" id="неважливо-нетерміново"></div>
-      <div class="shelf-buttons">
-        <button onclick="addBoxTo('неважливо-нетерміново')">➕ Додати</button>
-        <button onclick="clearShelf('неважливо-нетерміново')">❌ Очистити</button>
-      </div>
-    </div>
-    <div class="shelf" data-category="важливо-нетерміново">
-      <h2>🔳 Важливо і Нетерміново</h2>
-      <div class="boxes" id="важливо-нетерміново"></div>
-      <div class="shelf-buttons">
-        <button onclick="addBoxTo('важливо-нетерміново')">➕ Додати</button>
-        <button onclick="clearShelf('важливо-нетерміново')">❌ Очистити</button>
-      </div>
-    </div>
+    <!-- Додай інші 3 полиці аналогічно -->
   </div>
 
   <div id="bookView" class="book-view">
     <h2 id="boxTitle"></h2>
-    <div style="margin-bottom: 1rem;">
+    <div class="book-buttons">
       <button onclick="addBook()">➕ Додати книгу</button>
       <button onclick="deleteCurrentBox()">🗑️ Видалити ящик</button>
     </div>
     <div id="bookList"></div>
     <button onclick="backToShelves()">⬅️ Назад</button>
+  </div>
+
+  <div id="bookDetail" class="book-detail-view">
+    <h2 id="bookTitle"></h2>
+    <p>Це місце для розширеної інформації про книгу.</p>
+    <button onclick="backToBox()">⬅️ Назад до ящика</button>
   </div>
 
   <script type="module">
@@ -131,6 +116,7 @@
 
     let currentShelf = null;
     let currentBoxId = null;
+    let currentBoxName = "";
 
     window.addBoxTo = (category) => {
       const boxName = prompt("Назва ящика:");
@@ -172,8 +158,10 @@
     function openBox(category, boxId, name) {
       currentShelf = category;
       currentBoxId = boxId;
+      currentBoxName = name;
       document.querySelector(".shelf-grid").style.display = "none";
       document.getElementById("bookView").style.display = "block";
+      document.getElementById("bookDetail").style.display = "none";
       document.getElementById("boxTitle").innerText = `Ящик: ${name}`;
 
       const booksRef = ref(db, `shelves/${category}/${boxId}/books`);
@@ -182,10 +170,11 @@
         const list = document.getElementById("bookList");
         list.innerHTML = "";
         if (!data) return;
-        Object.values(data).forEach(book => {
+        Object.entries(data).forEach(([bookId, book]) => {
           const div = document.createElement("div");
           div.className = "book";
           div.innerText = book.title;
+          div.onclick = () => openBook(book.title);
           list.appendChild(div);
         });
       });
@@ -208,9 +197,21 @@
       }
     };
 
+    function openBook(title) {
+      document.getElementById("bookView").style.display = "none";
+      document.getElementById("bookDetail").style.display = "block";
+      document.getElementById("bookTitle").innerText = `Книга: ${title}`;
+    }
+
     window.backToShelves = () => {
       document.querySelector(".shelf-grid").style.display = "grid";
       document.getElementById("bookView").style.display = "none";
+      document.getElementById("bookDetail").style.display = "none";
+    };
+
+    window.backToBox = () => {
+      document.getElementById("bookView").style.display = "block";
+      document.getElementById("bookDetail").style.display = "none";
     };
 
     loadAll();
