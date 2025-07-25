@@ -1,124 +1,98 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>📚 Піксельна Шафа</title>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getDatabase,
+    ref,
+    push,
+    set,
+    onValue,
+    remove,
+    update,
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-  <style>
-    body {
-      background: #111;
-      color: #fff;
-      font-family: monospace;
-      text-align: center;
-      padding: 2rem;
-    }
-    .shelf-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-    .shelf {
-      background: #222;
-      border: 2px dashed #444;
-      padding: 1rem;
-      border-radius: 8px;
-    }
-    .boxes {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      margin-top: 1rem;
-    }
-    .box {
-      background: #333;
-      border: 1px solid #555;
-      padding: 0.5rem;
-      cursor: move;
-    }
-  </style>
-</head>
+  const firebaseConfig = {
+    apiKey: "AIzaSyD7cS8FH80HHQxsVvB76SyFgfatQq9TJuE",
+    authDomain: "pixelshelf-e1680.firebaseapp.com",
+    databaseURL: "https://pixelshelf-e1680-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "pixelshelf-e1680",
+    storageBucket: "pixelshelf-e1680.appspot.com",
+    messagingSenderId: "253121150131",
+    appId: "1:253121150131:web:aa9ce817e5b8ee0ddc84c6",
+    measurementId: "G-C6NMFS903Q"
+  };
 
-<body>
-  <h1>📚 Моя Піксельна Шафа</h1>
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-  <div class="shelf-grid">
-    <div class="shelf" data-category="важливо-терміново">
-      <h2>🟥 Важливо і Терміново</h2>
-      <div class="boxes" id="shelf-1"></div>
-    </div>
-    <div class="shelf" data-category="терміново-неважливо">
-      <h2>🟨 Терміново і Неважливо</h2>
-      <div class="boxes" id="shelf-2"></div>
-    </div>
-    <div class="shelf" data-category="неважливо-нетерміново">
-      <h2>🟦 Неважливо і Нетерміново</h2>
-      <div class="boxes" id="shelf-3"></div>
-    </div>
-    <div class="shelf" data-category="важливо-нетерміново">
-      <h2>🟩 Важливо і Нетерміново</h2>
-      <div class="boxes" id="shelf-4"></div>
-    </div>
-  </div>
+  window.addBox = () => {
+    const boxName = prompt("Назва ящика?");
+    if (!boxName) return;
 
-  <button onclick="addBox()">➕ Додати ящик</button>
+    const refPath = ref(db, "shelves/важливо-терміново");
+    const newBox = push(refPath);
+    set(newBox, {
+      name: boxName,
+      books: {}
+    });
+  };
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  function loadAll() {
+    const shelfRef = ref(db, "shelves");
+    onValue(shelfRef, (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
 
-    const firebaseConfig = {
-  apiKey: "AIzaSyD7cS8FH80HHQxsVvB76SyFgfatQq9TJuE",
-  authDomain: "pixelshelf-e1680.firebaseapp.com",
-  databaseURL: "https://pixelshelf-e1680-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "pixelshelf-e1680",
-  storageBucket: "pixelshelf-e1680.appspot.com",
-  messagingSenderId: "253121150131",
-  appId: "1:253121150131:web:aa9ce817e5b8ee0ddc84c6",
-  measurementId: "G-C6NMFS903Q"
-};
+      Object.keys(data).forEach((shelfKey, i) => {
+        const shelfDiv = document.getElementById(`shelf-${i + 1}`);
+        shelfDiv.innerHTML = "";
+        shelfDiv.dataset.shelfKey = shelfKey;
 
+        const boxes = data[shelfKey];
+        for (let boxId in boxes) {
+          const box = boxes[boxId];
+          const boxDiv = document.createElement("div");
+          boxDiv.className = "box";
+          boxDiv.innerText = box.name;
+          boxDiv.draggable = true;
+          boxDiv.dataset.id = boxId;
+          boxDiv.dataset.shelf = shelfKey;
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+          boxDiv.addEventListener("dragstart", (e) => {
+            e.dataTransfer.setData("boxId", boxId);
+            e.dataTransfer.setData("fromShelf", shelfKey);
+          });
 
-    // глобальна функція
-    window.addBox = () => {
-      const boxName = prompt("Назва ящика?");
-      if (!boxName) return;
-
-      const refPath = ref(db, "shelves/важливо-терміново");
-      const newBox = push(refPath);
-      set(newBox, {
-        name: boxName,
-        books: {}
+          shelfDiv.appendChild(boxDiv);
+        }
       });
-    };
 
-    function loadAll() {
-      const shelfRef = ref(db, "shelves");
-      onValue(shelfRef, (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
+      // додати drop events
+      document.querySelectorAll(".boxes").forEach((shelfDiv) => {
+        shelfDiv.addEventListener("dragover", (e) => e.preventDefault());
+        shelfDiv.addEventListener("drop", (e) => {
+          e.preventDefault();
+          const boxId = e.dataTransfer.getData("boxId");
+          const fromShelf = e.dataTransfer.getData("fromShelf");
+          const toShelf = shelfDiv.parentElement.dataset.category;
 
-        Object.keys(data).forEach((shelfKey, i) => {
-          const shelfDiv = document.getElementById(`shelf-${i + 1}`);
-          shelfDiv.innerHTML = "";
+          if (!boxId || !fromShelf || !toShelf || fromShelf === toShelf) return;
 
-          const boxes = data[shelfKey];
-          for (let boxId in boxes) {
-            const box = boxes[boxId];
-            const boxDiv = document.createElement("div");
-            boxDiv.className = "box";
-            boxDiv.innerText = box.name;
-            shelfDiv.appendChild(boxDiv);
-          }
+          const fromRef = ref(db, `shelves/${fromShelf}/${boxId}`);
+          const toRef = ref(db, `shelves/${toShelf}/${boxId}`);
+
+          // перемістити у Firebase
+          onValue(fromRef, (snap) => {
+            const boxData = snap.val();
+            if (!boxData) return;
+
+            set(toRef, boxData).then(() => {
+              remove(fromRef);
+            });
+          }, { onlyOnce: true });
         });
       });
-    }
+    });
+  }
 
-    loadAll();
-  </script>
-</body>
-</html>
+  loadAll();
+</script>
