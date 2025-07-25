@@ -28,7 +28,37 @@
   </div>
 
   <button onclick="addBox()">➕ Додати ящик</button>
-
+<style>body {
+  background: #111;
+  color: #fff;
+  font-family: monospace;
+  text-align: center;
+  padding: 2rem;
+}
+.shelf-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+.shelf {
+  background: #222;
+  border: 2px dashed #444;
+  padding: 1rem;
+  border-radius: 8px;
+}
+.boxes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.box {
+  background: #333;
+  border: 1px solid #555;
+  padding: 0.5rem;
+  cursor: move;
+}</style>
   <script type="module" src="firebase-logic.js"></script></body>
   <script type="module">
   // Import the functions you need from the SDKs you need
