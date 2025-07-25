@@ -69,15 +69,16 @@
     import { getDatabase, ref, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyD7cS8FH80HHQxsVvB76SyFgfatQq9TJuE",
-      databaseURL: "https://pixelshelf-e1680-default-rtdb.europe-west1.firebasedatabase.app",
-      databaseURL: "https://pixelshelf-e1680-default-rtdb.firebaseio.com",
-      projectId: "pixelshelf-e1680",
-      storageBucket: "pixelshelf-e1680.appspot.com",
-      messagingSenderId: "253121150131",
-      appId: "1:253121150131:web:aa9ce817e5b8ee0ddc84c6",
-      measurementId: "G-C6NMFS903Q"
-    };
+  apiKey: "AIzaSyD7cS8FH80HHQxsVvB76SyFgfatQq9TJuE",
+  authDomain: "pixelshelf-e1680.firebaseapp.com",
+  databaseURL: "https://pixelshelf-e1680-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "pixelshelf-e1680",
+  storageBucket: "pixelshelf-e1680.appspot.com",
+  messagingSenderId: "253121150131",
+  appId: "1:253121150131:web:aa9ce817e5b8ee0ddc84c6",
+  measurementId: "G-C6NMFS903Q"
+};
+
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
