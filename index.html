@@ -52,6 +52,15 @@
       cursor: pointer;
       border-radius: 4px;
     }
+    .book-view {
+      display: none;
+      margin-top: 2rem;
+    }
+    .book {
+      background: #444;
+      padding: 0.3rem 0.6rem;
+      margin: 0.2rem 0;
+    }
   </style>
 </head>
 <body>
@@ -59,40 +68,21 @@
 
   <div class="shelf-grid">
     <div class="shelf" data-category="важливо-терміново">
-      <h2>🟥 Важливо і Терміново</h2>
+      <h2>🔳 Важливо і Терміново</h2>
       <div class="boxes" id="важливо-терміново"></div>
       <div class="shelf-buttons">
         <button onclick="addBoxTo('важливо-терміново')">➕ Додати</button>
         <button onclick="clearShelf('важливо-терміново')">❌ Очистити</button>
       </div>
     </div>
+    <!-- Інші полиці такі ж -->
+  </div>
 
-    <div class="shelf" data-category="терміново-неважливо">
-      <h2>🟨 Терміново і Неважливо</h2>
-      <div class="boxes" id="терміново-неважливо"></div>
-      <div class="shelf-buttons">
-        <button onclick="addBoxTo('терміново-неважливо')">➕ Додати</button>
-        <button onclick="clearShelf('терміново-неважливо')">❌ Очистити</button>
-      </div>
-    </div>
-
-    <div class="shelf" data-category="неважливо-нетерміново">
-      <h2>🟦 Неважливо і Нетерміново</h2>
-      <div class="boxes" id="неважливо-нетерміново"></div>
-      <div class="shelf-buttons">
-        <button onclick="addBoxTo('неважливо-нетерміново')">➕ Додати</button>
-        <button onclick="clearShelf('неважливо-нетерміново')">❌ Очистити</button>
-      </div>
-    </div>
-
-    <div class="shelf" data-category="важливо-нетерміново">
-      <h2>🟩 Важливо і Нетерміново</h2>
-      <div class="boxes" id="важливо-нетерміново"></div>
-      <div class="shelf-buttons">
-        <button onclick="addBoxTo('важливо-нетерміново')">➕ Додати</button>
-        <button onclick="clearShelf('важливо-нетерміново')">❌ Очистити</button>
-      </div>
-    </div>
+  <div id="bookView" class="book-view">
+    <h2 id="boxTitle"></h2>
+    <button onclick="addBook()">➕ Додати книгу</button>
+    <div id="bookList"></div>
+    <button onclick="backToShelves()">⬅️ Назад</button>
   </div>
 
   <script type="module">
@@ -112,6 +102,9 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+
+    let currentShelf = null;
+    let currentBoxId = null;
 
     window.addBoxTo = (category) => {
       const boxName = prompt("Назва ящика:");
@@ -143,21 +136,48 @@
             const boxDiv = document.createElement("div");
             boxDiv.className = "box";
             boxDiv.innerText = box.name;
-            boxDiv.title = "Двічі клацни, щоб видалити";
 
-            boxDiv.ondblclick = () => {
-              const confirmDelete = confirm(`Видалити ящик "${box.name}"?`);
-              if (confirmDelete) {
-                const boxRef = ref(db, `shelves/${category}/${boxId}`);
-                remove(boxRef);
-              }
-            };
-
+            boxDiv.onclick = () => openBox(category, boxId, box.name);
             shelfDiv.appendChild(boxDiv);
           });
         });
       });
     }
+
+    function openBox(category, boxId, name) {
+      currentShelf = category;
+      currentBoxId = boxId;
+      document.querySelector(".shelf-grid").style.display = "none";
+      document.getElementById("bookView").style.display = "block";
+      document.getElementById("boxTitle").innerText = `Ящик: ${name}`;
+
+      const booksRef = ref(db, `shelves/${category}/${boxId}/books`);
+      onValue(booksRef, (snapshot) => {
+        const data = snapshot.val();
+        const list = document.getElementById("bookList");
+        list.innerHTML = "";
+        if (!data) return;
+        Object.values(data).forEach(book => {
+          const div = document.createElement("div");
+          div.className = "book";
+          div.innerText = book.title;
+          list.appendChild(div);
+        });
+      });
+    }
+
+    window.addBook = () => {
+      const title = prompt("Назва книги:");
+      if (!title) return;
+      const booksRef = ref(db, `shelves/${currentShelf}/${currentBoxId}/books`);
+      const newBook = push(booksRef);
+      set(newBook, { title });
+    };
+
+    window.backToShelves = () => {
+      document.querySelector(".shelf-grid").style.display = "grid";
+      document.getElementById("bookView").style.display = "none";
+    };
 
     loadAll();
   </script>
