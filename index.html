@@ -3,10 +3,33 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="../style/style.css" />
+    <link rel="stylesheet" href="style.css" />
     <title>Bookshelf</title>
   </head>
-  <body></body>
+  <body>  <h1>📚 Моя Піксельна Шафа</h1>
+
+  <div class="shelf-grid">
+    <div class="shelf" data-category="важливо-терміново">
+      <h2>🟥 Важливо і Терміново</h2>
+      <div class="boxes" id="shelf-1"></div>
+    </div>
+    <div class="shelf" data-category="терміново-неважливо">
+      <h2>🟨 Терміново і Неважливо</h2>
+      <div class="boxes" id="shelf-2"></div>
+    </div>
+    <div class="shelf" data-category="неважливо-нетерміново">
+      <h2>🟦 Неважливо і Нетерміново</h2>
+      <div class="boxes" id="shelf-3"></div>
+    </div>
+    <div class="shelf" data-category="важливо-нетерміново">
+      <h2>🟩 Важливо і Нетерміново</h2>
+      <div class="boxes" id="shelf-4"></div>
+    </div>
+  </div>
+
+  <button onclick="addBox()">➕ Додати ящик</button>
+
+  <script type="module" src="firebase-logic.js"></script></body>
   <script type="module">
   // Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
