@@ -28,7 +28,8 @@
   </div>
 
   <button onclick="addBox()">➕ Додати ящик</button>
-<style>body {
+<style>
+  body {
   background: #111;
   color: #fff;
   font-family: monospace;
@@ -82,5 +83,62 @@
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
+</script>
+<script>
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// 🔐 Firebase config — ЗАМІНИ своїм!
+const firebaseConfig = {
+  apiKey: "ТВОЄ",
+  authDomain: "ТВОЄ",
+  databaseURL: "ТВОЄ",
+  projectId: "ТВОЄ",
+  storageBucket: "ТВОЄ",
+  messagingSenderId: "ТВОЄ",
+  appId: "ТВОЄ"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ➕ Додає ящик на першу полицю
+window.addBox = () => {
+  const boxName = prompt("Назва ящика?");
+  if (!boxName) return;
+
+  const refPath = ref(db, "shelves/важливо-терміново");
+  const newBox = push(refPath);
+  set(newBox, {
+    name: boxName,
+    books: {}
+  });
+};
+
+// 🔄 Вивід усіх ящиків
+function loadAll() {
+  const shelfRef = ref(db, "shelves");
+  onValue(shelfRef, (snapshot) => {
+    const data = snapshot.val();
+    if (!data) return;
+
+    Object.keys(data).forEach((shelfKey, i) => {
+      const shelfDiv = document.getElementById(`shelf-${i + 1}`);
+      shelfDiv.innerHTML = "";
+
+      const boxes = data[shelfKey];
+      for (let boxId in boxes) {
+        const box = boxes[boxId];
+        const boxDiv = document.createElement("div");
+        boxDiv.className = "box";
+        boxDiv.innerText = box.name;
+        shelfDiv.appendChild(boxDiv);
+      }
+    });
+  });
+}
+
+loadAll();
+
 </script>
 </html>
