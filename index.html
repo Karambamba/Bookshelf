@@ -68,7 +68,7 @@
 
   <div class="shelf-grid">
     <div class="shelf" data-category="важливо-терміново">
-      <h2>🔳 Важливо і Терміново</h2>
+      <h2>🔺 Важливо і Терміново</h2>
       <div class="boxes" id="важливо-терміново"></div>
       <div class="shelf-buttons">
         <button onclick="addBoxTo('важливо-терміново')">➕ Додати</button>
@@ -76,7 +76,7 @@
       </div>
     </div>
     <div class="shelf" data-category="терміново-неважливо">
-      <h2>🔹 Терміново і Неважливо</h2>
+      <h2>🔵 Терміново і Неважливо</h2>
       <div class="boxes" id="терміново-неважливо"></div>
       <div class="shelf-buttons">
         <button onclick="addBoxTo('терміново-неважливо')">➕ Додати</button>
@@ -84,7 +84,7 @@
       </div>
     </div>
     <div class="shelf" data-category="неважливо-нетерміново">
-      <h2>🔵 Неважливо і Нетерміново</h2>
+      <h2>🔹 Неважливо і Нетерміново</h2>
       <div class="boxes" id="неважливо-нетерміново"></div>
       <div class="shelf-buttons">
         <button onclick="addBoxTo('неважливо-нетерміново')">➕ Додати</button>
@@ -92,7 +92,7 @@
       </div>
     </div>
     <div class="shelf" data-category="важливо-нетерміново">
-      <h2>🔺 Важливо і Нетерміново</h2>
+      <h2>🔳 Важливо і Нетерміново</h2>
       <div class="boxes" id="важливо-нетерміново"></div>
       <div class="shelf-buttons">
         <button onclick="addBoxTo('важливо-нетерміново')">➕ Додати</button>
@@ -103,7 +103,10 @@
 
   <div id="bookView" class="book-view">
     <h2 id="boxTitle"></h2>
-    <button onclick="addBook()">➕ Додати книгу</button>
+    <div style="margin-bottom: 1rem;">
+      <button onclick="addBook()">➕ Додати книгу</button>
+      <button onclick="deleteCurrentBox()">🗑️ Видалити ящик</button>
+    </div>
     <div id="bookList"></div>
     <button onclick="backToShelves()">⬅️ Назад</button>
   </div>
@@ -159,7 +162,6 @@
             const boxDiv = document.createElement("div");
             boxDiv.className = "box";
             boxDiv.innerText = box.name;
-
             boxDiv.onclick = () => openBox(category, boxId, box.name);
             shelfDiv.appendChild(boxDiv);
           });
@@ -195,6 +197,15 @@
       const booksRef = ref(db, `shelves/${currentShelf}/${currentBoxId}/books`);
       const newBook = push(booksRef);
       set(newBook, { title });
+    };
+
+    window.deleteCurrentBox = () => {
+      if (!currentShelf || !currentBoxId) return;
+      if (confirm("Ви дійсно хочете видалити цей ящик?")) {
+        const boxRef = ref(db, `shelves/${currentShelf}/${currentBoxId}`);
+        remove(boxRef);
+        backToShelves();
+      }
     };
 
     window.backToShelves = () => {
