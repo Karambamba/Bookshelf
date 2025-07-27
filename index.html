@@ -99,10 +99,11 @@
       <button onclick="editCurrentBook()">✍️ Редагувати книгу</button>
       <button onclick="renameCurrentBook()">✏️ Перейменувати книгу</button>
       <button onclick="deleteCurrentBook()">🗑️ Видалити книгу</button>
-      <button onclick="document.getElementById('imageInput').click()">🖼️ Додати картинку</button>
+      <label style="cursor: pointer;">
+        <input type="file" style="display:none;" onchange="uploadBookImage(event)">
+        🖼️ Додати картинку
+      </label>
     </div>
-
-    <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="uploadBookImage(event)">
 
     <div id="editForm" style="display:none; margin-top:1rem;">
       <textarea id="editDetails" rows="4" style="width: 100%; max-width: 500px;"></textarea><br>
@@ -287,12 +288,19 @@
     window.uploadBookImage = async (event) => {
       const file = event.target.files[0];
       if (!file || !currentBookId) return;
+
       const path = `book_images/${currentShelf}/${currentBoxId}/${currentBookId}/${file.name}`;
       const imageRef = storageRef(storage, path);
       await uploadBytes(imageRef, file);
       const url = await getDownloadURL(imageRef);
+
       const bookRef = ref(db, `shelves/${currentShelf}/${currentBoxId}/books/${currentBookId}`);
-      update(bookRef, { imageUrl: url });
+      await update(bookRef, { imageUrl: url });
+
+      // Показати одразу
+      const img = document.getElementById("bookImage");
+      img.src = url;
+      img.style.display = "block";
     };
 
     window.backToShelves = () => {
