@@ -96,12 +96,13 @@
     <p id="bookInfoText">Це місце для розширеної інформації про книгу.</p>
 
     <div class="book-buttons">
-      <input type="file" id="imageUpload" accept="image/*" style="display:none" onchange="uploadImage(this)">
-      <button onclick="document.getElementById('imageUpload').click()">🖼️ Додати картинку</button>
       <button onclick="editCurrentBook()">✍️ Редагувати книгу</button>
       <button onclick="renameCurrentBook()">✏️ Перейменувати книгу</button>
       <button onclick="deleteCurrentBook()">🗑️ Видалити книгу</button>
+      <button onclick="document.getElementById('imageInput').click()">🖼️ Додати картинку</button>
     </div>
+
+    <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="uploadBookImage(event)">
 
     <div id="editForm" style="display:none; margin-top:1rem;">
       <textarea id="editDetails" rows="4" style="width: 100%; max-width: 500px;"></textarea><br>
@@ -138,23 +139,174 @@
     let currentBookTitle = "";
     let currentBookDetails = "";
 
-    window.uploadImage = (input) => {
-      if (!input.files.length || !currentBookId) return;
-      const file = input.files[0];
-      const path = `images/${currentShelf}/${currentBoxId}/${currentBookId}/${file.name}`;
-      const refImg = storageRef(storage, path);
-      uploadBytes(refImg, file)
-        .then(() => getDownloadURL(refImg))
-        .then(url => {
-          update(ref(db, `shelves/${currentShelf}/${currentBoxId}/books/${currentBookId}`), { imageUrl: url });
-          document.getElementById("bookImage").src = url;
-          document.getElementById("bookImage").style.display = "block";
-          alert("✅ Зображення додано!");
-        }).catch(console.error);
+    window.addBoxTo = (category) => {
+      const boxName = prompt("Назва ящика:");
+      if (!boxName) return;
+      const shelfRef = ref(db, "shelves/" + category);
+      const newBox = push(shelfRef);
+      set(newBox, { name: boxName });
     };
 
-    // ... зберігаємо всі інші функції (openBox, addBook, editCurrentBook, тощо)
+    window.clearShelf = (category) => {
+      if (confirm("Очистити всі ящики з цієї полиці?")) {
+        remove(ref(db, "shelves/" + category));
+      }
+    };
 
+    function loadAll() {
+      const shelfRef = ref(db, "shelves");
+      onValue(shelfRef, (snapshot) => {
+        const data = snapshot.val();
+        document.querySelectorAll(".boxes").forEach(boxes => boxes.innerHTML = "");
+        if (!data) return;
+        Object.entries(data).forEach(([category, boxes]) => {
+          const shelfDiv = document.getElementById(category);
+          if (!shelfDiv) return;
+          Object.entries(boxes).forEach(([boxId, box]) => {
+            const boxDiv = document.createElement("div");
+            boxDiv.className = "box";
+            boxDiv.innerText = box.name;
+            boxDiv.onclick = () => openBox(category, boxId, box.name);
+            shelfDiv.appendChild(boxDiv);
+          });
+        });
+      });
+    }
+
+    function openBox(category, boxId, name) {
+      currentShelf = category;
+      currentBoxId = boxId;
+      currentBoxName = name;
+      document.querySelector(".shelf-grid").style.display = "none";
+      document.getElementById("bookView").style.display = "block";
+      document.getElementById("bookDetail").style.display = "none";
+      document.getElementById("boxTitle").innerText = `Ящик: ${name}`;
+
+      const booksRef = ref(db, `shelves/${category}/${boxId}/books`);
+      onValue(booksRef, (snapshot) => {
+        const data = snapshot.val();
+        const list = document.getElementById("bookList");
+        list.innerHTML = "";
+        if (!data) return;
+        Object.entries(data).forEach(([bookId, book]) => {
+          const div = document.createElement("div");
+          div.className = "book";
+          div.innerText = book.title;
+          div.onclick = () => openBook(bookId, book.title);
+          list.appendChild(div);
+        });
+      });
+    }
+
+    window.renameCurrentBox = () => {
+      const newName = prompt("Нова назва ящика:", currentBoxName);
+      if (!newName) return;
+      const boxRef = ref(db, `shelves/${currentShelf}/${currentBoxId}`);
+      update(boxRef, { name: newName });
+      currentBoxName = newName;
+      document.getElementById("boxTitle").innerText = `Ящик: ${newName}`;
+    };
+
+    window.addBook = () => {
+      const title = prompt("Назва книги:");
+      if (!title) return;
+      const booksRef = ref(db, `shelves/${currentShelf}/${currentBoxId}/books`);
+      const newBook = push(booksRef);
+      set(newBook, { title });
+    };
+
+    window.deleteCurrentBox = () => {
+      if (!currentShelf || !currentBoxId) return;
+      if (confirm("Ви дійсно хочете видалити цей ящик?")) {
+        const boxRef = ref(db, `shelves/${currentShelf}/${currentBoxId}`);
+        remove(boxRef);
+        backToShelves();
+      }
+    };
+
+    function openBook(bookId, title) {
+      currentBookId = bookId;
+      currentBookTitle = title;
+      document.getElementById("bookView").style.display = "none";
+      document.getElementById("bookDetail").style.display = "block";
+      document.getElementById("bookTitle").innerText = `Книга: ${title}`;
+      document.getElementById("editForm").style.display = "none";
+
+      const bookRef = ref(db, `shelves/${currentShelf}/${currentBoxId}/books/${bookId}`);
+      onValue(bookRef, (snapshot) => {
+        const data = snapshot.val();
+        currentBookDetails = data?.details || "";
+        document.getElementById("bookInfoText").innerText = currentBookDetails || "Інформація не вказана.";
+        const imageElement = document.getElementById("bookImage");
+        if (data?.imageUrl) {
+          imageElement.src = data.imageUrl;
+          imageElement.style.display = "block";
+        } else {
+          imageElement.style.display = "none";
+        }
+      }, { onlyOnce: true });
+    }
+
+    window.editCurrentBook = () => {
+      document.getElementById("editForm").style.display = "block";
+      document.getElementById("editDetails").value = currentBookDetails;
+    };
+
+    window.saveBookDetails = () => {
+      const newDetails = document.getElementById("editDetails").value;
+      const bookRef = ref(db, `shelves/${currentShelf}/${currentBoxId}/books/${currentBookId}`);
+      update(bookRef, { details: newDetails });
+      currentBookDetails = newDetails;
+      document.getElementById("bookInfoText").innerText = newDetails || "Інформація не вказана.";
+      document.getElementById("editForm").style.display = "none";
+    };
+
+    window.cancelEdit = () => {
+      document.getElementById("editForm").style.display = "none";
+    };
+
+    window.renameCurrentBook = () => {
+      if (!currentBookId) return;
+      const newTitle = prompt("Нова назва книги:", currentBookTitle);
+      if (!newTitle) return;
+      const bookRef = ref(db, `shelves/${currentShelf}/${currentBoxId}/books/${currentBookId}`);
+      update(bookRef, { title: newTitle });
+      currentBookTitle = newTitle;
+      document.getElementById("bookTitle").innerText = `Книга: ${newTitle}`;
+    };
+
+    window.deleteCurrentBook = () => {
+      if (!currentBookId) return;
+      if (confirm("Ви дійсно хочете видалити цю книгу?")) {
+        const bookRef = ref(db, `shelves/${currentShelf}/${currentBoxId}/books/${currentBookId}`);
+        remove(bookRef);
+        backToBox();
+      }
+    };
+
+    window.uploadBookImage = async (event) => {
+      const file = event.target.files[0];
+      if (!file || !currentBookId) return;
+      const path = `book_images/${currentShelf}/${currentBoxId}/${currentBookId}/${file.name}`;
+      const imageRef = storageRef(storage, path);
+      await uploadBytes(imageRef, file);
+      const url = await getDownloadURL(imageRef);
+      const bookRef = ref(db, `shelves/${currentShelf}/${currentBoxId}/books/${currentBookId}`);
+      update(bookRef, { imageUrl: url });
+    };
+
+    window.backToShelves = () => {
+      document.querySelector(".shelf-grid").style.display = "grid";
+      document.getElementById("bookView").style.display = "none";
+      document.getElementById("bookDetail").style.display = "none";
+    };
+
+    window.backToBox = () => {
+      document.getElementById("bookView").style.display = "block";
+      document.getElementById("bookDetail").style.display = "none";
+    };
+
+    loadAll();
   </script>
 </body>
 </html>
