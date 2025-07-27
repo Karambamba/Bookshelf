@@ -205,10 +205,9 @@
     window.addBook = () => {
       const title = prompt("Назва книги:");
       if (!title) return;
-      const imageUrl = prompt("Посилання на зображення (або залиш порожнім):");
       const booksRef = ref(db, `shelves/${currentShelf}/${currentBoxId}/books`);
       const newBook = push(booksRef);
-      set(newBook, { title, imageUrl: imageUrl || "" });
+      set(newBook, { title });
     };
 
     window.deleteCurrentBox = () => {
@@ -234,12 +233,7 @@
         currentBookDetails = data?.details || "";
         document.getElementById("bookInfoText").innerText = currentBookDetails || "Інформація не вказана.";
         const imageElement = document.getElementById("bookImage");
-        if (data?.imageUrl) {
-          imageElement.src = data.imageUrl;
-          imageElement.style.display = "block";
-        } else {
-          imageElement.style.display = "none";
-        }
+        imageElement.style.display = "none";
       }, { onlyOnce: true });
     }
 
